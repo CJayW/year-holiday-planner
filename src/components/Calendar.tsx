@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-interface DateEntry {
+export interface DateEntry {
   date: Date;
   tag: string;
 }
@@ -35,8 +35,9 @@ const MONTHS = [
 // Default tag styles
 const DEFAULT_TAG_STYLES: Record<string, string> = {
   holiday: "bg-red-100 text-red-900",
+  "bank-holiday": "bg-orange-100 text-orange-900",
   current: "bg-green-100 text-green-900",
-  selected: "bg-purple-200 text-purple-900",
+  selected: "outline outline-2 outline-blue-500",
 };
 
 export default function YearCalendar({
@@ -47,7 +48,10 @@ export default function YearCalendar({
   onDateSelect,
   onDateHover,
 }: YearCalendarProps) {
-  const styledDates = _styledDates.map((entry: DateEntry) => {
+  const combinedDates = [..._styledDates];
+
+  // Convert to processed format
+  const styledDates = combinedDates.map((entry: DateEntry) => {
     const date = new Date(entry.date);
     const dateString = date.toDateString();
 
