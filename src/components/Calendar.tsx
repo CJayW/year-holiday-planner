@@ -8,7 +8,8 @@ interface DateEntry {
 }
 
 interface YearCalendarProps {
-  year?: number;
+  startDate?: Date; // e.g., new Date(2025, 10) for November 2025
+  endDate?: Date; // e.g., new Date(2026, 2) for March 2026
   styledDates?: DateEntry[];
   tagStyles?: Record<string, string>; // tag -> classname mapping
   onDateSelect?: (date: Date) => void;
@@ -39,7 +40,8 @@ const DEFAULT_TAG_STYLES: Record<string, string> = {
 };
 
 export default function YearCalendar({
-  year = new Date().getFullYear(),
+  startDate = new Date(new Date().getFullYear(), 0),
+  endDate = new Date(new Date().getFullYear(), 11, 31),
   styledDates: _styledDates = [],
   tagStyles = {},
   onDateSelect,
@@ -65,6 +67,27 @@ export default function YearCalendar({
 
   // Merge default and custom tag styles
   const mergedTagStyles = { ...DEFAULT_TAG_STYLES, ...tagStyles };
+
+  // Calculate months to render
+  const getMonthsToRender = (): Array<{ year: number; month: number }> => {
+    const start = startDate;
+    const end = endDate;
+
+    const months: Array<{ year: number; month: number }> = [];
+    let current = new Date(start.getFullYear(), start.getMonth());
+
+    while (current <= end) {
+      months.push({
+        year: current.getFullYear(),
+        month: current.getMonth(),
+      });
+      current.setMonth(current.getMonth() + 1);
+    }
+
+    return months;
+  };
+
+  const monthsToRender = getMonthsToRender();
 
   const getDateStyle = (date: Date): string => {
     const dateString = date.toDateString();
@@ -96,9 +119,10 @@ export default function YearCalendar({
     onDateHover?.(date);
   };
 
-  const renderMonth = (monthIndex: number) => {
-    const firstDay = new Date(year, monthIndex, 1);
-    const lastDay = new Date(year, monthIndex + 1, 0);
+  const renderMonth = (monthYear: { year: number; month: number }) => {
+    const { year: monthYearValue, month: monthIndex } = monthYear;
+    const firstDay = new Date(monthYearValue, monthIndex, 1);
+    const lastDay = new Date(monthYearValue, monthIndex + 1, 0);
     const startingDayOfWeek = firstDay.getDay();
     const daysInMonth = lastDay.getDate();
 
@@ -111,7 +135,7 @@ export default function YearCalendar({
 
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, monthIndex, day));
+      days.push(new Date(monthYearValue, monthIndex, day));
     }
 
     // Pad to complete the grid (ensure we have space for 5 rows of 7 days)
@@ -121,11 +145,11 @@ export default function YearCalendar({
 
     return (
       <div
-        key={monthIndex}
+        key={`${monthYearValue}-${monthIndex}`}
         className="border rounded-lg p-4 bg-white shadow-sm"
       >
         <h3 className="text-lg font-bold mb-4 text-center">
-          {MONTHS[monthIndex]} {year}
+          {MONTHS[monthIndex]} {monthYearValue}
         </h3>
 
         {/* Days of week header */}
@@ -163,11 +187,16 @@ export default function YearCalendar({
 
   return (
     <div className="w-full p-6">
-      <h1 className="text-3xl font-bold mb-8">{year} Calendar</h1>
+      <h1 className="text-3xl font-bold mb-8">
+        {monthsToRender.length > 0 &&
+        monthsToRender[0].year ===
+          monthsToRender[monthsToRender.length - 1].year
+          ? monthsToRender[0].year
+          : `${monthsToRender[0]?.year} - ${monthsToRender[monthsToRender.length - 1]?.year}`}{" "}
+        Calendar
+      </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 12 }).map((_, monthIndex) =>
-          renderMonth(monthIndex),
-        )}
+        {monthsToRender.map((monthYear) => renderMonth(monthYear))}
       </div>
     </div>
   );
